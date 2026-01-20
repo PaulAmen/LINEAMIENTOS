@@ -28,14 +28,12 @@ function doGet(e) {
   try {
     const datos = procesarDatosEncuesta();
     
+    // ContentService no soporta setHeaders, pero CORS funciona automáticamente
+    // cuando se despliega como "Cualquier persona" puede acceder
     return ContentService
       .createTextOutput(JSON.stringify(datos))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeaders({
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET',
-        'Access-Control-Allow-Headers': 'Content-Type'
-      });
+      .setMimeType(ContentService.MimeType.JSON);
+      
   } catch (error) {
     return ContentService
       .createTextOutput(JSON.stringify({
