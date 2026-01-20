@@ -1,0 +1,22 @@
+{
+  "name": "dashboard-educativo-unesum",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Dashboard Educativo para análisis de encuestas académicas - UNESUM",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "astro": "^4.16.18",
+    "@astrojs/svelte": "^5.7.2",
+    "svelte": "^4.2.19",
+    "chart.js": "^4.4.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "typescript": "^5.7.3"
+  }
+}
