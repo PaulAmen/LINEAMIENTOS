@@ -371,6 +371,7 @@ function percentil(sortedArray, p) {
 
 /**
  * Extrae el nombre de la categoría desde el header de la columna
+ * Patrón principal: "Categoría [Pregunta específica]"
  */
 function extraerCategoria(header) {
   if (!header || typeof header !== 'string') {
@@ -379,55 +380,34 @@ function extraerCategoria(header) {
   
   const headerTrim = header.trim();
   
-  // Patrón 1: "Categoría - Pregunta específica"
-  if (headerTrim.includes(' - ')) {
-    const partes = headerTrim.split(' - ');
-    if (partes.length >= 2 && partes[0].length > 3) {
-      return partes[0].trim();
-    }
-  }
-  
-  // Patrón 2: "Categoría [Pregunta específica]"
+  // Patrón PRINCIPAL: "Categoría [Pregunta específica]"
+  // Este es el patrón usado en las 164 preguntas de UNESUM
   if (headerTrim.includes('[')) {
     const partes = headerTrim.split('[');
-    if (partes.length >= 2 && partes[0].trim().length > 3) {
+    if (partes.length >= 2 && partes[0].trim().length > 0) {
       return partes[0].trim();
     }
   }
   
-  // Patrón 3: "Categoría... resto"
+  // Patrón alternativo: "Categoría - Pregunta específica"
+  if (headerTrim.includes(' - ')) {
+    const partes = headerTrim.split(' - ');
+    if (partes.length >= 2 && partes[0].length > 0) {
+      return partes[0].trim();
+    }
+  }
+  
+  // Patrón alternativo: "Categoría... resto"
   if (headerTrim.includes('...')) {
     const partes = headerTrim.split('...');
-    if (partes[0].length > 3) {
+    if (partes[0].length > 0) {
       return partes[0].trim();
     }
   }
   
-  // Patrón 4: Usar las primeras 3-8 palabras como categoría
-  // (para preguntas largas sin separadores claros)
-  const palabras = headerTrim.split(' ');
-  if (palabras.length >= 3) {
-    // Tomar entre 3 y 6 palabras, evitando terminar en preposiciones
-    let numPalabras = Math.min(6, palabras.length);
-    let categoria = palabras.slice(0, numPalabras).join(' ');
-    
-    // Si termina en preposición, agregar una palabra más
-    const preposiciones = ['de', 'del', 'la', 'el', 'los', 'las', 'con', 'en', 'a', 'para', 'por'];
-    const ultimaPalabra = palabras[numPalabras - 1]?.toLowerCase();
-    
-    if (preposiciones.includes(ultimaPalabra) && numPalabras < palabras.length) {
-      categoria = palabras.slice(0, numPalabras + 1).join(' ');
-    }
-    
-    return categoria;
-  }
-  
-  // Si es muy corto, usar tal cual
-  if (headerTrim.length > 2) {
-    return headerTrim;
-  }
-  
-  return null;
+  // Si no tiene separadores reconocidos, usar el texto completo como categoría
+  // (esto garantiza que ninguna pregunta se quede sin procesar)
+  return headerTrim;
 }
 
 /**
