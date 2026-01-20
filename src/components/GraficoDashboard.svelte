@@ -16,18 +16,18 @@
     metricas: Metricas;
   }
 
-  // Estado del componente
-  let datos: DatoSemestre[] = [];
-  let cargando = true;
-  let error = '';
-  let chart: Chart | null = null;
-  let canvasElement: HTMLCanvasElement;
+  // Estado del componente usando $state (Svelte 5 runes)
+  let datos = $state<DatoSemestre[]>([]);
+  let cargando = $state(true);
+  let error = $state('');
+  let chart = $state<Chart | null>(null);
+  let canvasElement = $state<HTMLCanvasElement | undefined>(undefined);
 
   // Estados de los filtros
-  let semestresDisponibles: string[] = [];
-  let dimensionesDisponibles: string[] = [];
-  let semestresSeleccionados = new Set<string>();
-  let dimensionesSeleccionadas = new Set<string>();
+  let semestresDisponibles = $state<string[]>([]);
+  let dimensionesDisponibles = $state<string[]>([]);
+  let semestresSeleccionados = $state(new Set<string>());
+  let dimensionesSeleccionadas = $state(new Set<string>());
 
   // Paleta de colores para los semestres
   const coloresSemestres: Record<string, string> = {
@@ -189,7 +189,7 @@
     } else {
       semestresSeleccionados.add(semestre);
     }
-    semestresSeleccionados = semestresSeleccionados; // Trigger reactivity
+    semestresSeleccionados = new Set(semestresSeleccionados); // Trigger reactivity
     renderizarGrafico();
   }
 
@@ -199,7 +199,7 @@
     } else {
       dimensionesSeleccionadas.add(dimension);
     }
-    dimensionesSeleccionadas = dimensionesSeleccionadas; // Trigger reactivity
+    dimensionesSeleccionadas = new Set(dimensionesSeleccionadas); // Trigger reactivity
     renderizarGrafico();
   }
 
@@ -244,7 +244,7 @@
     <div class="error">
       <h3>Error al cargar los datos</h3>
       <p>{error}</p>
-      <button on:click={cargarDatos}>Reintentar</button>
+      <button onclick={cargarDatos}>Reintentar</button>
     </div>
   {:else}
     <div class="filtros-container">
@@ -252,8 +252,8 @@
       <div class="filtro-grupo">
         <h3>Filtrar por Semestre</h3>
         <div class="filtro-acciones">
-          <button on:click={seleccionarTodosSemestres} class="btn-small">Todos</button>
-          <button on:click={deseleccionarTodosSemestres} class="btn-small">Ninguno</button>
+          <button onclick={seleccionarTodosSemestres} class="btn-small">Todos</button>
+          <button onclick={deseleccionarTodosSemestres} class="btn-small">Ninguno</button>
         </div>
         <div class="checkbox-group">
           {#each semestresDisponibles as semestre}
@@ -261,7 +261,7 @@
               <input
                 type="checkbox"
                 checked={semestresSeleccionados.has(semestre)}
-                on:change={() => toggleSemestre(semestre)}
+                onchange={() => toggleSemestre(semestre)}
               />
               <span style="color: {coloresSemestres[semestre] || '#000'}">{semestre}</span>
             </label>
@@ -273,8 +273,8 @@
       <div class="filtro-grupo">
         <h3>Filtrar por Dimensión</h3>
         <div class="filtro-acciones">
-          <button on:click={seleccionarTodasDimensiones} class="btn-small">Todas</button>
-          <button on:click={deseleccionarTodasDimensiones} class="btn-small">Ninguna</button>
+          <button onclick={seleccionarTodasDimensiones} class="btn-small">Todas</button>
+          <button onclick={deseleccionarTodasDimensiones} class="btn-small">Ninguna</button>
         </div>
         <div class="checkbox-group dimensiones-scroll">
           {#each dimensionesDisponibles as dimension}
@@ -282,7 +282,7 @@
               <input
                 type="checkbox"
                 checked={dimensionesSeleccionadas.has(dimension)}
-                on:change={() => toggleDimension(dimension)}
+                onchange={() => toggleDimension(dimension)}
               />
               <span>{dimension}</span>
             </label>

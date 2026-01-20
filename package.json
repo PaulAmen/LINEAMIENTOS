@@ -10,10 +10,10 @@
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^4.16.18",
-    "@astrojs/svelte": "^5.7.2",
-    "svelte": "^4.2.19",
-    "chart.js": "^4.4.8"
+    "@astrojs/svelte": "^7.2.5",
+    "astro": "^5.16.11",
+    "chart.js": "^4.4.8",
+    "svelte": "^5.22.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
