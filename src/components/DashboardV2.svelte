@@ -23,13 +23,28 @@
     totalRespuestas: number;
   }
 
+  interface PreguntaIndividual {
+    pregunta: string;
+    categoria: string;
+    promedio: number;
+    totalRespuestas: number;
+    porSemestre: Record<string, Estadisticas>;
+  }
+
   interface DatosBackend {
     porSemestre: any[];
     rankingDimensiones: DimensionRanking[];
+    preguntasIndividuales: PreguntaIndividual[];
     distribucionFrecuencias: Record<number, number>;
     estadisticasGlobales: Estadisticas;
     estudiantesPorSemestre: Record<string, number>;
     totalEstudiantes: number;
+    metadata: {
+      totalDimensiones: number;
+      totalPreguntasIndividuales: number;
+      totalRespuestas: number;
+      fechaProcesamiento: string;
+    };
   }
 
   // Estado
@@ -49,12 +64,14 @@
   let chartRanking = $state<Chart | null>(null);
   let chartRadar = $state<Chart | null>(null);
   let chartComparacion = $state<Chart | null>(null);
+  let chartPreguntasIndividuales = $state<Chart | null>(null);
 
   // Canvas refs
   let canvasCircular = $state<HTMLCanvasElement | undefined>(undefined);
   let canvasRanking = $state<HTMLCanvasElement | undefined>(undefined);
   let canvasRadar = $state<HTMLCanvasElement | undefined>(undefined);
   let canvasComparacion = $state<HTMLCanvasElement | undefined>(undefined);
+  let canvasPreguntasIndividuales = $state<HTMLCanvasElement | undefined>(undefined);
 
   const coloresSemestres: Record<string, string> = {
     'Sexto': '#FF6384',
@@ -106,6 +123,8 @@
       renderizarComparacion();
     } else if (tabActiva === 'analisis') {
       renderizarComparacion(); // Mismo gráfico pero con filtros
+    } else if (tabActiva === 'preguntas') {
+      renderizarPreguntasIndividuales();
     }
   }
 
@@ -355,6 +374,85 @@
     });
   }
 
+  function renderizarPreguntasIndividuales() {
+    if (!canvasPreguntasIndividuales || !datos || !datos.preguntasIndividuales) return;
+    if (chartPreguntasIndividuales) chartPreguntasIndividuales.destroy();
+
+    const ctx = canvasPreguntasIndividuales.getContext('2d');
+    if (!ctx) return;
+
+    // Tomar las 164 preguntas (o las que haya)
+    const todasPreguntas = datos.preguntasIndividuales;
+
+    // Colores para ranking (verde=top, azul=medio, rojo=bajo)
+    const colores = todasPreguntas.map((_, idx) => {
+      const porcentaje = idx / todasPreguntas.length;
+      if (porcentaje < 0.2) return '#4CAF50'; // Top 20% verde
+      if (porcentaje > 0.8) return '#F44336'; // Bottom 20% rojo
+      return '#2196F3'; // Medio azul
+    });
+
+    chartPreguntasIndividuales = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: todasPreguntas.map(p => {
+          // Truncar pregunta larga
+          return p.pregunta.length > 60 ? p.pregunta.substring(0, 60) + '...' : p.pregunta;
+        }),
+        datasets: [{
+          label: 'Promedio',
+          data: todasPreguntas.map(p => p.promedio),
+          backgroundColor: colores.map(c => c + 'CC'),
+          borderColor: colores,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: `Ranking de las ${todasPreguntas.length} Preguntas Individuales`,
+            font: { size: 18, weight: 'bold' }
+          },
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: (context) => {
+                const index = context[0].dataIndex;
+                return todasPreguntas[index].pregunta;
+              },
+              label: (context) => {
+                const index = context.dataIndex;
+                const pregunta = todasPreguntas[index];
+                return [
+                  `Promedio: ${pregunta.promedio.toFixed(2)} / 5`,
+                  `Categoría: ${pregunta.categoria}`,
+                  `Respuestas: ${pregunta.totalRespuestas}`
+                ];
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            max: 5,
+            title: { display: true, text: 'Promedio (1-5)' }
+          },
+          y: {
+            ticks: {
+              font: { size: 8 },
+              autoSkip: false
+            }
+          }
+        }
+      }
+    });
+  }
+
   function cambiarTab(tab: string) {
     tabActiva = tab;
     setTimeout(() => renderizarGraficos(), 50);
@@ -437,6 +535,10 @@
         <div class="kpi-value">{datos.rankingDimensiones.length}</div>
         <div class="kpi-label">Dimensiones</div>
       </div>
+      <div class="kpi">
+        <div class="kpi-value">{datos.metadata?.totalPreguntasIndividuales || 164}</div>
+        <div class="kpi-label">Preguntas</div>
+      </div>
       <div class="kpi success">
         <div class="kpi-value">{datos.rankingDimensiones[0].promedio.toFixed(2)}</div>
         <div class="kpi-label" title={datos.rankingDimensiones[0].dimension}>
@@ -451,13 +553,16 @@
       </div>
     </div>
 
-    <!-- Tabs (SIN DISTRIBUCIÓN) -->
+    <!-- Tabs -->
     <div class="tabs">
       <button class:active={tabActiva === 'resumen'} onclick={() => cambiarTab('resumen')}>
         📊 Resumen
       </button>
       <button class:active={tabActiva === 'ranking'} onclick={() => cambiarTab('ranking')}>
-        📈 Ranking Completo
+        📈 Ranking (27 Dimensiones)
+      </button>
+      <button class:active={tabActiva === 'preguntas'} onclick={() => cambiarTab('preguntas')}>
+        📋 Preguntas Individuales (164)
       </button>
       <button class:active={tabActiva === 'radar'} onclick={() => cambiarTab('radar')}>
         🕸️ Perfil
@@ -481,6 +586,24 @@
         <div class="chart-container xlarge">
           <canvas bind:this={canvasRanking}></canvas>
         </div>
+        
+      {:else if tabActiva === 'preguntas'}
+        {#if datos.preguntasIndividuales && datos.preguntasIndividuales.length > 0}
+          <div class="chart-container xxlarge">
+            <canvas bind:this={canvasPreguntasIndividuales}></canvas>
+          </div>
+        {:else}
+          <div class="error">
+            <h3>⚠️ Actualización Requerida</h3>
+            <p>Para ver las 164 preguntas individuales, necesitas actualizar el backend de Google Apps Script.</p>
+            <ol style="text-align: left; max-width: 600px; margin: 1rem auto;">
+              <li>Abre <a href="https://script.google.com/" target="_blank">script.google.com</a></li>
+              <li>Abre tu proyecto "Backend Dashboard UNESUM"</li>
+              <li>Reemplaza TODO el código con el archivo <code>Code.gs</code> actualizado</li>
+              <li>Guarda (Ctrl+S) y recarga esta página</li>
+            </ol>
+          </div>
+        {/if}
         
       {:else if tabActiva === 'radar'}
         <div class="chart-container medium">
@@ -691,6 +814,10 @@
 
   .chart-container.xlarge {
     height: 1200px;
+  }
+
+  .chart-container.xxlarge {
+    height: 3500px; /* Para mostrar las 164 preguntas */
   }
 
   .filtros-container {

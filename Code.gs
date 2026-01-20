@@ -84,6 +84,7 @@ function procesarDatosEncuesta() {
   // Identificar columnas numéricas y extraer categorías
   const columnasNumericas = [];
   const categoriasMap = new Map();
+  const preguntasIndividualesMap = new Map(); // NUEVO: para 164 preguntas
   
   headers.forEach((header, idx) => {
     if (idx === colSemestre || columnasExcluidas.has(idx)) {
@@ -95,6 +96,7 @@ function procesarDatosEncuesta() {
     if (categoria) {
       columnasNumericas.push(idx);
       categoriasMap.set(idx, categoria);
+      preguntasIndividualesMap.set(idx, header); // Guardar pregunta completa
     }
   });
   
@@ -103,6 +105,8 @@ function procesarDatosEncuesta() {
   const todasLasRespuestas = [];
   const distribucionFrecuencias = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
   const respuestasPorDimension = {};
+  const respuestasPorPreguntaIndividual = []; // NUEVO: Array para 164 preguntas (no objeto)
+  const preguntasIndexMap = new Map(); // Mapeo de índice de columna a posición en array
   
   // Procesar cada fila
   filas.forEach(fila => {
@@ -119,10 +123,11 @@ function procesarDatosEncuesta() {
     columnasNumericas.forEach(idx => {
       const valor = fila[idx];
       const categoria = categoriasMap.get(idx);
+      const preguntaCompleta = preguntasIndividualesMap.get(idx);
       
       const num = Number(valor);
       if (!isNaN(num) && num >= 1 && num <= 6) {
-        // Para promedios por semestre
+        // Para promedios por semestre (dimensiones agrupadas)
         if (!datosPorSemestre[semestre][categoria]) {
           datosPorSemestre[semestre][categoria] = [];
         }
@@ -131,7 +136,7 @@ function procesarDatosEncuesta() {
         // Para distribución de frecuencias global
         distribucionFrecuencias[num]++;
         
-        // Para respuestas por dimensión
+        // Para respuestas por dimensión (agrupadas)
         if (!respuestasPorDimension[categoria]) {
           respuestasPorDimension[categoria] = {
             total: [],
@@ -144,6 +149,32 @@ function procesarDatosEncuesta() {
           respuestasPorDimension[categoria].porSemestre[semestre] = [];
         }
         respuestasPorDimension[categoria].porSemestre[semestre].push(num);
+        
+        // NUEVO: Para preguntas individuales (164 items) usando ARRAY
+        let preguntaIndex = preguntasIndexMap.get(idx);
+        
+        if (preguntaIndex === undefined) {
+          // Primera vez que vemos esta pregunta - crear entrada
+          preguntaIndex = respuestasPorPreguntaIndividual.length;
+          preguntasIndexMap.set(idx, preguntaIndex);
+          
+          respuestasPorPreguntaIndividual.push({
+            id: preguntaIndex,
+            pregunta: preguntaCompleta,
+            categoria: categoria,
+            indiceColumna: idx,
+            total: [],
+            porSemestre: {}
+          });
+        }
+        
+        // Agregar respuesta
+        respuestasPorPreguntaIndividual[preguntaIndex].total.push(num);
+        
+        if (!respuestasPorPreguntaIndividual[preguntaIndex].porSemestre[semestre]) {
+          respuestasPorPreguntaIndividual[preguntaIndex].porSemestre[semestre] = [];
+        }
+        respuestasPorPreguntaIndividual[preguntaIndex].porSemestre[semestre].push(num);
         
         todasLasRespuestas.push(num);
       }
@@ -182,6 +213,34 @@ function procesarDatosEncuesta() {
   
   // Ordenar por promedio descendente
   rankingDimensiones.sort((a, b) => b.promedio - a.promedio);
+  
+  // NUEVO: Calcular ranking de preguntas individuales (164 items)
+  const rankingPreguntasIndividuales = respuestasPorPreguntaIndividual.map(preguntaData => {
+    const stats = calcularEstadisticas(preguntaData.total);
+    
+    const porSemestreStats = {};
+    Object.keys(preguntaData.porSemestre).forEach(sem => {
+      porSemestreStats[sem] = calcularEstadisticas(preguntaData.porSemestre[sem]);
+    });
+    
+    return {
+      id: preguntaData.id,
+      pregunta: preguntaData.pregunta,
+      categoria: preguntaData.categoria,
+      promedio: stats.promedio,
+      mediana: stats.mediana,
+      desviacionEstandar: stats.desviacionEstandar,
+      minimo: stats.minimo,
+      maximo: stats.maximo,
+      q1: stats.q1,
+      q3: stats.q3,
+      totalRespuestas: stats.count,
+      porSemestre: porSemestreStats
+    };
+  });
+  
+  // Ordenar por promedio descendente
+  rankingPreguntasIndividuales.sort((a, b) => b.promedio - a.promedio);
   
   // Calcular estadísticas globales
   const estadisticasGlobales = calcularEstadisticas(todasLasRespuestas);
@@ -233,9 +292,13 @@ function procesarDatosEncuesta() {
     // Respuestas por dimensión (para boxplot y análisis detallado)
     respuestasPorDimension: respuestasPorDimension,
     
+    // NUEVO: Preguntas individuales
+    preguntasIndividuales: rankingPreguntasIndividuales,
+    
     // Metadata
     metadata: {
       totalDimensiones: Object.keys(respuestasPorDimension).length,
+      totalPreguntasIndividuales: rankingPreguntasIndividuales.length,
       totalRespuestas: todasLasRespuestas.length,
       fechaProcesamiento: new Date().toISOString()
     }
