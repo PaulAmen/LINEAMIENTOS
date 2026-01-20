@@ -3,7 +3,7 @@ import svelte from '@astrojs/svelte';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://TU_USUARIO.github.io',
+  site: 'https://PaulAmen.github.io',
   base: '/LINEAMIENTOS',
   integrations: [svelte()],
   build: {
