@@ -559,10 +559,10 @@
         📊 Resumen
       </button>
       <button class:active={tabActiva === 'ranking'} onclick={() => cambiarTab('ranking')}>
-        📈 Ranking (27 Dimensiones)
+        📈 Ranking ({datos.rankingDimensiones.length} Dimensiones)
       </button>
       <button class:active={tabActiva === 'preguntas'} onclick={() => cambiarTab('preguntas')}>
-        📋 Preguntas Individuales (164)
+        📋 Preguntas Individuales ({datos.metadata?.totalPreguntasIndividuales || 164})
       </button>
       <button class:active={tabActiva === 'radar'} onclick={() => cambiarTab('radar')}>
         🕸️ Perfil

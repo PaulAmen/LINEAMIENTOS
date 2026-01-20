@@ -395,23 +395,7 @@ function extraerCategoria(header) {
     }
   }
   
-  // Patrón 3: Primeras palabras significativas
-  if (headerTrim.length > 40) {
-    const palabras = headerTrim.split(' ');
-    if (palabras.length > 3) {
-      const posibleCategoria = palabras.slice(0, Math.min(6, palabras.length)).join(' ');
-      
-      if (posibleCategoria.endsWith('de') || 
-          posibleCategoria.endsWith('con') || 
-          posibleCategoria.endsWith('la') ||
-          posibleCategoria.endsWith('el')) {
-        return palabras.slice(0, Math.min(7, palabras.length)).join(' ');
-      }
-      
-      return posibleCategoria;
-    }
-  }
-  
+  // Si no coincide con ningún patrón, no agrupar
   return null;
 }
 
