@@ -96,6 +96,13 @@
 
       datos = json;
       
+      // DEBUG: Verificar dimensiones recibidas
+      console.log('===== DEBUG DIMENSIONES =====');
+      console.log('Total dimensiones recibidas:', datos.rankingDimensiones.length);
+      console.log('Metadata total:', datos.metadata?.totalDimensiones);
+      console.log('Listado:', datos.rankingDimensiones.map((d, i) => `${i+1}. ${d.dimension}`));
+      console.log('============================');
+      
       // Inicializar filtros
       semestresDisponibles = datos.porSemestre.map(s => s.semestre);
       semestresSeleccionados = new Set(semestresDisponibles);
@@ -505,7 +512,7 @@
 
 <div class="dashboard">
   <header class="header">
-    <h1>Dashboard Educativo UNESUM</h1>
+    <h1>Dashboard Carrera Educación UNESUM</h1>
     <p>Análisis de Evaluación Curricular - 604 Estudiantes</p>
   </header>
 
@@ -665,6 +672,10 @@
       {/if}
     </div>
   {/if}
+
+  <footer class="footer">
+    <p>Dashboard Carrera Educación UNESUM | Contacto: <a href="mailto:paul.amen@unesum.edu.ec">paul.amen@unesum.edu.ec</a></p>
+  </footer>
 </div>
 
 <style>
@@ -923,5 +934,27 @@
     .filtros-container {
       grid-template-columns: 1fr;
     }
+  }
+
+  .footer {
+    text-align: center;
+    padding: 2rem;
+    margin-top: 3rem;
+    background: #f5f5f5;
+    border-top: 2px solid #e0e0e0;
+    border-radius: 8px;
+    color: #666;
+    font-size: 0.95rem;
+  }
+
+  .footer a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .footer a:hover {
+    color: #764ba2;
+    text-decoration: underline;
   }
 </style>

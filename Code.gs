@@ -68,15 +68,16 @@ function procesarDatosEncuesta() {
     throw new Error('No se encontró la columna de Nivel/Semestre');
   }
   
-  // Identificar columnas a excluir
+  // Identificar columnas a excluir (solo administrativas, no las dimensiones)
   const columnasExcluidas = new Set();
   headers.forEach((header, idx) => {
-    const headerLower = header.toLowerCase();
+    const headerLower = header.toLowerCase().trim();
+    // Solo excluir columnas administrativas específicas
     if (headerLower.includes('marca temporal') || 
         headerLower.includes('marca de tiempo') ||
         headerLower.includes('timestamp') ||
-        headerLower.includes('elija su carrera') ||
-        headerLower.includes('carrera')) {
+        headerLower.startsWith('elija') ||
+        headerLower === 'carrera') {
       columnasExcluidas.add(idx);
     }
   });
@@ -87,11 +88,18 @@ function procesarDatosEncuesta() {
   const preguntasIndividualesMap = new Map(); // NUEVO: para 164 preguntas
   
   headers.forEach((header, idx) => {
+    // Excluir: timestamp (col 0), carrera (col 1), semestre (col 2), y otras columnas excluidas
     if (idx === colSemestre || columnasExcluidas.has(idx)) {
       return;
     }
     
     const categoria = extraerCategoria(header);
+    
+    // Excluir también si la categoría extraída contiene "nivel" o "semestre"
+    if (categoria && (categoria.toLowerCase().includes('nivel') || 
+                      categoria.toLowerCase().includes('semestre que cursa'))) {
+      return;
+    }
     
     if (categoria) {
       columnasNumericas.push(idx);
@@ -213,6 +221,15 @@ function procesarDatosEncuesta() {
   
   // Ordenar por promedio descendente
   rankingDimensiones.sort((a, b) => b.promedio - a.promedio);
+  
+  // DEBUG: Loggear dimensiones detectadas
+  Logger.log('===== DIMENSIONES DETECTADAS =====');
+  Logger.log('Total de dimensiones únicas: ' + rankingDimensiones.length);
+  Logger.log('Listado completo:');
+  rankingDimensiones.forEach((dim, idx) => {
+    Logger.log((idx + 1) + '. ' + dim.dimension);
+  });
+  Logger.log('==================================');
   
   // NUEVO: Calcular ranking de preguntas individuales (164 items)
   const rankingPreguntasIndividuales = respuestasPorPreguntaIndividual.map(preguntaData => {
@@ -416,4 +433,69 @@ function extraerCategoria(header) {
 function testProcesarDatos() {
   const resultado = procesarDatosEncuesta();
   Logger.log(JSON.stringify(resultado, null, 2));
+}
+
+/**
+ * Función de debug para ver qué dimensiones se están detectando
+ */
+function debugDimensiones() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const sheet = ss.getSheetByName(SHEET_NAME);
+  const datos = sheet.getDataRange().getValues();
+  const headers = datos[0];
+  
+  Logger.log('===== ANÁLISIS DE ENCABEZADOS =====');
+  Logger.log('Total de columnas: ' + headers.length);
+  
+  const dimensionesUnicas = new Set();
+  
+  // Encontrar columna de semestre
+  const colSemestre = headers.findIndex(h => 
+    h.toLowerCase().includes('nivel') || h.toLowerCase().includes('semestre')
+  );
+  
+  // Identificar columnas a excluir (solo administrativas)
+  const columnasExcluidas = new Set();
+  headers.forEach((header, idx) => {
+    const headerLower = header.toLowerCase().trim();
+    if (headerLower.includes('marca temporal') || 
+        headerLower.includes('marca de tiempo') ||
+        headerLower.includes('timestamp') ||
+        headerLower.startsWith('elija') ||
+        headerLower === 'carrera') {
+      columnasExcluidas.add(idx);
+    }
+  });
+  
+  headers.forEach((header, idx) => {
+    if (idx === colSemestre || columnasExcluidas.has(idx)) {
+      Logger.log('Columna ' + idx + ' EXCLUIDA: ' + header);
+      return;
+    }
+    
+    const categoria = extraerCategoria(header);
+    
+    // Excluir también si la categoría extraída contiene "nivel" o "semestre que cursa"
+    if (categoria && (categoria.toLowerCase().includes('nivel') || 
+                      categoria.toLowerCase().includes('semestre que cursa'))) {
+      Logger.log('Columna ' + idx + ' EXCLUIDA (es semestre): ' + header);
+      return;
+    }
+    
+    if (categoria) {
+      dimensionesUnicas.add(categoria);
+      Logger.log('Columna ' + idx + ' → Dimensión: "' + categoria + '"');
+      Logger.log('  Header completo: ' + header);
+    } else {
+      Logger.log('Columna ' + idx + ' SIN CATEGORÍA: ' + header);
+    }
+  });
+  
+  Logger.log('\n===== RESUMEN =====');
+  Logger.log('Total de dimensiones únicas detectadas: ' + dimensionesUnicas.size);
+  Logger.log('\nListado de dimensiones:');
+  Array.from(dimensionesUnicas).sort().forEach((dim, idx) => {
+    Logger.log((idx + 1) + '. ' + dim);
+  });
+  Logger.log('==================');
 }
