@@ -496,6 +496,10 @@
       {/if}
     </div>
   {/if}
+
+  <footer class="footer">
+    <p>Dashboard Carrera Educación UNESUM | Contacto: <a href="mailto:paul.amen@unesum.edu.ec">paul.amen@unesum.edu.ec</a></p>
+  </footer>
 </div>
 
 <style>
@@ -524,4 +528,26 @@
   .loading { text-align: center; padding: 5rem; }
   .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
   @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  
+  .footer {
+    text-align: center;
+    padding: 2rem;
+    margin-top: 3rem;
+    background: #f5f5f5;
+    border-top: 2px solid #e0e0e0;
+    border-radius: 8px;
+    color: #666;
+    font-size: 0.95rem;
+  }
+
+  .footer a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .footer a:hover {
+    color: #764ba2;
+    text-decoration: underline;
+  }
 </style>
